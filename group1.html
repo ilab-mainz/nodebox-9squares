@@ -1,0 +1,306 @@
+<!doctype html>
+<html>
+<head>
+
+  <meta charset="utf-8">
+  <title>9 Squares iFrames Example</title>
+  <style>
+
+  body {
+    background-color: #fff;
+    font-family: "Arial";
+  }
+
+  iframe {
+    background-color: #fff;
+    border: none;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    background-color: transparent;
+  }
+
+  span {
+    display: inline-block;
+    padding: 10px 20px;
+  }
+
+  section {
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: .5em;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+    padding: 15px 20px;
+    font-size: 14px;
+  }
+
+  h1 {
+    color: #666;
+  }
+
+  p span:last-child {
+    float: right;
+  }
+
+  a {
+    color: #999;
+    text-decoration: none;
+  }
+
+  table {
+    border-collapse: collapse;
+    user-select: none;
+  }
+
+  tr, td {
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+    font-size: 0px;
+  }
+
+  td {
+    position: relative;
+    overflow: hidden;
+  }
+
+  iframe {
+
+  }
+
+  </style>
+</head>
+<body>
+
+  <section>
+    <h1>9 Squares Collaboration</h1>
+    <p>
+
+      <!--nine canvases, one for each square -->
+      <table>
+        <tr>
+          <td><iframe id="one" ></iframe><div class="overlay"></div></td>
+          <td><iframe id="two" ></iframe><div class="overlay"></div></td>
+          <td><iframe id="three"></iframe><div class="overlay"></div></td>
+        </tr>
+        <tr>
+          <td><iframe id="four"></iframe><div class="overlay"></div></td>
+          <td><iframe id="five" ></iframe><div class="overlay"></div></td>
+          <td><iframe id="six" ></iframe><div class="overlay"></div></td>
+        </tr>
+        <tr>
+          <td><iframe id="seven" ></iframe><div class="overlay"></div></td>
+          <td><iframe id="eight" ></iframe><div class="overlay"></div></td>
+          <td><iframe id="nine" ></iframe><div class="overlay"></div></td>
+        </tr>
+      </table>
+
+    </p>
+
+    <p>
+      <span class="right"><a class="share" href="" target="_blank">share</a></span>
+    </p>
+
+  </section>
+
+  <!-- A link to the NodeBox JavaScript API  -->
+  <!-- <script src="https://nodebox.live/api/v1/ndbx.js"></script> -->
+  <!-- <script src="https://cdn.rawgit.com/nodebox/g.js/master/dist/g.js"></script> -->
+
+  <!-- Your custom initialization code -->
+  <script>
+
+ // no context menu
+  window.oncontextmenu = function () {
+      return false;     // cancel default menu
+  }
+
+  // nodebox size of a tile
+  var size = 150;
+
+  // zoom factor
+  var zoom = 1.5;
+
+  // project ID on nodebox.live
+  var project = 'ninesquares';
+
+  // network names for the squares ...
+  var ids = [ 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine' ];
+
+
+
+  var qs = location.search.substring(1);
+
+  var squares = {
+    'one': 'lehmachermichelle',
+    'two': 'johanna-nethe',
+    'three': 'manuelrau',
+    'four': 'julia-birgit-schwarz',
+    'five': 'nhmi-van',
+    'six': 'philipzathureczky',
+    'seven': 'yannik-rapp',
+    'eight': 'julianpontzen',
+    'nine': 'elpida-tsaousidis'
+  }
+
+  // list of users in the group
+  var users = Object.values(squares);
+
+  if(qs) {
+    var qs_squares = JSON.parse('{"' + decodeURI(qs).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}');
+    Object.assign(squares, qs_squares);
+  }
+
+  // global list of players
+  window.players = {};
+
+  // embed 9 squares
+  for(var i = 0; i < 9; i++) {
+    embedSquare(ids[i], squares[ids[i]], size);
+  };
+
+
+  // create sharing link
+  var share = document.getElementsByClassName("share")[0];
+  share.onclick = function() {
+    var qs = Object.keys(squares).map(key => (encodeURIComponent(key) + '=' + encodeURIComponent(squares[key]))).join('&');
+    window.open('?' + qs);
+    return false;
+  }
+
+  //window.requestAnimationFrame(animate);
+
+  // run several animations concurrently
+  function animate() {
+
+    // increase current frame
+    ndbx._currentFrame += 1;
+
+    // display all the squares that have been loaded
+    ids.forEach( s => window.players[s] && window.players[s].draw() );
+
+    window.requestAnimationFrame(animate);
+  }
+
+  function switchFrame(iframe, overlay, id, user) {
+    iframe.src = "https://nodebox.live/embed/" + user + "/ninesquares/" + id + "?autoplay=true";
+    overlay.title = user;
+  }
+
+  function embedSquare(id, user, size) {
+
+    var iframe = document.getElementById(id);
+    iframe.style.width = size + "px"
+    iframe.style.height = size + "px"
+
+    iframe.style.transform = "scale(" + zoom + ")";
+    iframe.style.transformOrigin = "50%";
+
+    var overlay = iframe.parentNode.getElementsByClassName("overlay")[0];
+    overlay.style.width = size + "px"
+    overlay.style.height = size + "px"
+
+    switchFrame(iframe, overlay, id, user);
+
+    //iframe.outerHTML = iframe.outerHTML + '<div class="overlay"></div>';
+
+    overlay.onmousedown = function(evt) {
+
+      var button = evt.which;
+      var shift = evt.shiftKey;
+
+      // switch tile
+      if(button === 1 && !shift) {
+        squares[id] = user = users[ (users.indexOf(user) + 1) % users.length ];
+        switchFrame(iframe, overlay, id, user);
+      }
+
+      // show source
+      if( (button === 1 && shift) || button === 3) {
+        var url = "https://nodebox.live/" + user + "/" + project;
+        window.open(url);
+      }
+
+    };
+
+
+
+    //iframe.transform = "scale(2)";
+
+    //<iframe width="100" height="100" src=" frameborder="0" allowfullscreen></iframe>
+
+    /*
+    // make sure to set the canvas dimensions to the size of the square
+    var cvs = document.getElementById(id);
+
+    // set size of each tile
+    cvs.style.width = size + "px";
+    cvs.style.height = size + "px";
+
+    // options for the current square
+    var options = {
+      userId: user,
+      projectId: project,
+      functionId: id,
+      canvasId: id,
+      autoplay: false,
+      setWidthHeight: true
+    };
+
+    // Initialize the NodeBox player for the current square
+    ndbx.embed(options, function(err, player) {
+      if (err) {
+        throw new Error(err);
+      } else {
+
+        // set canvas size in pixels according to the nodebox function
+        cvs.width = player.fn.width;
+        cvs.height = player.fn.height;
+
+        // wrap project link around the canvas
+
+
+       //  cvs.outerHTML =  '<a href="' + url + '" title="' + title + '">' + cvs.outerHTML +  '</a>';
+
+        cvs.title = user;
+
+        cvs.onmousedown = function(evt) {
+
+          var button = evt.which;
+          var shift = evt.shiftKey;
+
+          // switch tile
+          if(button === 1 && !shift) {
+            var next = users[ (users.indexOf(user) + 1) % users.length ];
+            console.log("Switch to", next);
+          }
+
+          // show source
+          if( (button === 1 && shift) || button === 3) {
+            var url = "https://nodebox.live/" + user + "/" + project;
+            window.open(url);
+          }
+
+        }
+
+
+        window.players[id] = player;
+
+      }
+    });
+
+    */
+  }
+
+
+  </script>
+</body>
+</html>
